@@ -1,0 +1,49 @@
+Apple SQL Interview Question : 
+
+The Apple Customer Retention Data Science team needs your help to investigate buying patterns related to AirPods and iPhones.
+Write a SQL query to determine the percentage of buyers who bought AirPods directly after they bought iPhones. Round your answer to a percentage (i.e. 20 for 20%, 50 for 50) with no decimals.
+
+transactions table
++---------------------+-------------+--------------+-----------------------+
+| transaction_id   | customer_id | product_name | transaction_timestamp |
++---------------------+-------------+--------------+-----------------------+
+| 1          | 101     | iPhone    | 08/08/2022 00:00:00  |
++---------------------+-------------+--------------+-----------------------+
+| 2          | 101     | AirPods   | 08/08/2022 00:00:00  |
++---------------------+-------------+--------------+-----------------------+
+| 5          | 301     | iPhone    | 09/05/2022 00:00:00  |
++---------------------+-------------+--------------+-----------------------+
+| 6          | 301     | iPad     | 09/06/2022 00:00:00  |
++---------------------+-------------+--------------+-----------------------+
+| 7          | 301     | AirPods   | 09/07/2022 00:00:00  |
++---------------------+-------------+--------------+-----------------------+
+My solution :
+ WITH apple_cte AS
+ (SELECT * , LEAD(product_name,1,0) OVER(PARTITION BY customer_id ORDER BY transaction_timestamp) AS LeadTransactions
+ FROM APPLE_transactions)
+ 
+ SELECT  
+ FLOOR(Round((SELECT COUNT(DISTINCT customer_id) FROM apple_cte 
+ WHERE product_name = "iPhone" AND 
+ LeadTransactions = "AirPods")/(SELECT COUNT(DISTINCT customer_id)),2)*100) AS follow_up_percentage
+ FROM apple_cte ;
+
+
+
+WITH lag_products AS (SELECT
+customer_id, product_name,
+LAG(product_name) OVER (PARTITION BY customer_id ORDER BY transaction_timestamp) AS prev_prod
+FROM transactions),
+
+interestedcustomers AS (
+SELECT ROUND(SUM(CASE WHEN product_name = 'Airpods' and prev_prod = 'iphone' THEN 1 ELSE 0) / COUNT(DISTINCT customer_id),0) AS percentage
+FROM lag_products
+
+
+)
+
+************************
+
+
+
+
