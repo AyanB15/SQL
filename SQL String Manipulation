@@ -1,0 +1,25 @@
+-- SQL manipulation for string data.
+
+1. Find the first name, middle name and last name from the Name column.
+-- The idea being that if there is one space there is only first name and last name. If two spaces then first name, middle name and last name.
+
+WITH CTE AS (SELECT *, 
+                      len(customer_name) - len(replace(customer_name,' ','')) AS no_of_spaces
+                      CHARINDEX(' ', customer_name) AS first_space_position,
+                      CHARINDEX(' ', customer_name, CHARINDEX(' ', customer_name)+1) AS second_space_position
+            FROM table)
+
+SELECT *,
+        CASE WHEN no_of_spaces = 0 THEN customer_name
+        ELSE SUBSTR(customer_name, 1, first_space_position-1 ) 
+        END AS First_Name,
+
+        CASE WHEN no_of_spaces < = 1 THEN NULL
+        ELSE SUBSTR(customer_name, first_space_position+1, second_space_position-first_space_position-1) 
+        END AS Middle_Name,
+
+        CASE WHEN no_of_spaces = 0 THEN NULL
+        WHEN no_of_spaces = 1 THEN SUBSTR(customer_name, first_space_position+1, len(customer_name) - first_space_position)
+        WHEN no_of_spaces = 2 THEN SUBSTR(customer_name, second_space_position+1, len(customer_name) - second_space_position)
+        END AS Last_Name
+FROM CTE
