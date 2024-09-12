@@ -1,0 +1,45 @@
+-- A database contains daily covid cases reported for 2021.
+    1. Calculate the percentage increase in covid cases each month
+    2. Cumulative cases as of the prior month.
+Return the month number and the percentage increase rounded to 1 decimal. Order result by month.
+
+Table: Daily_cases - record_date, case_count
+
+METHOD 1 - 
+
+-- Bringing the data to month level from day level.
+
+            WITH CTE AS ( SELECT MONTH(record_date) AS month_number, SUM(case_count) AS monthly_cases
+                          FROM Daily_cases
+                          GROUP BY MONTH(record_date)
+                        ) ,
+Now, calculate the cumulative number of cases as of prior month.
+
+           CTE2 AS  ( SELECT cc.month_number AS current_month, pm.month_number AS previous_month, cm.monthly_cases AS current_count, pm.monthly_cases AS prior_count              
+                      FROM CTE cm LEFT JOIN pm
+                      ON pm.month_number < cm.month_number
+                    )
+
+
+SELECT current_month, current_count, SUM(prior_count) AS cum_sum, ROUND(current_count * 100.0/ SUM(prior_count),1)
+FROM CTE2
+GROUP BY current_month, current_count
+
+
+
+METHOD 2 - 
+
+            WITH CTE AS ( SELECT MONTH(record_date) AS month_number,
+                          SUM(case_count) AS monthly_cases
+                          FROM Daily_cases
+                          GROUP BY MONTH(record_date)
+                        ),
+
+
+            CTE2 AS ( SELECT *,
+                      SUM(monthly_cases) OVER (ORDER BY month_number ROWS BETWEEN UNBOUNDED PRECEEDING AND 1 PRECEEDING) AS cum_sum
+                      FROM CTE
+                    )
+
+            SELECT month_number, monthly_cases, ROUND(monthly_cases * 100.0 / cum_sum,1)
+            FROM CTE2
